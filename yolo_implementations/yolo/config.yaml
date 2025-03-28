@@ -1,0 +1,9 @@
+path: absotule-path
+train: images/train
+val: images/validation
+device: 0  # Use GPU index 0 (your RTX 3050)
+batch: 16  # Start with 16; adjust based on VRAM usage
+workers: 8 #
+
+names:
+  0: license_plate
