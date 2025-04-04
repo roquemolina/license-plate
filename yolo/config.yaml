@@ -1,0 +1,7 @@
+path: C:\Users\roque\Documents\license-plate\yolo\datasets
+train: license_plates_small/train
+val: license_plates_small/valid
+test: license_plates_small/test
+
+names:
+  0: license_plate

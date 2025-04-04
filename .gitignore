@@ -172,3 +172,16 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# datasets
+yolo/datasets
+
+#sort
+sort
+
+#videos
+*.mp4
+*.webm
+
+#csvs
+*.csv
