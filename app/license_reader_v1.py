@@ -1,14 +1,14 @@
 """
 --------------------------------------------------------------------------------------
-This file contains the first pre-idea it:
-    - Read cars
-    - Track cars in an object
-    - Search any license plate IN THE ENTIRE FRAME,
-        crop and process the image and link it
-        with the car that has been added to the before.
-    - Write filename, license plate and score in a csv.
-    - Write in a csv to then aply the add_missing_data
-      and visualize
+This file contains the first v1 it:
+    - Take a video as an input and read objects
+    - Filter cars and detection confidence is > 60%
+    - Search any license plate INSIDE COOPRED CAR FRAME and 
+      detection confidence is > 60%
+    - Process cropped license plate
+    - Read license plate text and
+      detection confidence is > 60%
+    - Send to API license plate
 --------------------------------------------------------------------------------------
 """
 
@@ -62,16 +62,17 @@ while ret:
     
     ret, frame = cap.read()
     if ret:
+        # It help to break when test few frames
         """ if frame_nmr > 20:
                 break """
         # detect vehicles
         vehicle_detections = coco_model(frame)[0]
         detections_ = []
         for detection in vehicle_detections.boxes.data.tolist():
-            x1, y1, x2, y2, score, class_id = detection
+            x1, y1, x2, y2, detection_score, class_id = detection
             # Filter by confidence score (60% threshold) and vehicle
-            if int(class_id) in vehicles and score > 0.6:
-                detections_.append([x1, y1, x2, y2, score])
+            if int(class_id) in vehicles and detection_score > 0.6:
+                detections_.append([x1, y1, x2, y2, detection_score])
 
         for vehicle in detections_:
             xcar1, ycar1, xcar2, ycar2, car_score = vehicle
@@ -85,7 +86,8 @@ while ret:
             for plate in license_plates.boxes.data.tolist():
               x1, y1, x2, y2, plate_score, _ = plate
 
-              if plate_score < 0.6:  # Skip plates with confidence below 60%
+              # Skip plates with confidence below 60%
+              if plate_score < 0.6:  
                 continue
 
               # Crop the license plate from the car region
@@ -123,9 +125,12 @@ while ret:
 
               for plate_text in plate_texts:
                 
-                bbox, text, score = plate_text  # Changed from 'text' to 'plate_text'
+                bbox, text, text_score = plate_text
+                # Skip plates with confidence below 60%
+                if text_score < 0.6:  
+                  continue
                  
-                 # Clean the text: uppercase, remove spaces, and filter special characters
+                # Clean the text: uppercase, remove spaces, and filter special characters
                 cleaned_text = text.upper().replace(' ', '')
                  # Remove any remaining non-alphanumeric characters using regex
                 cleaned_text = re.sub(f'[^{"".join(ALLOWED_CHARS)}]', '', cleaned_text)
@@ -134,27 +139,12 @@ while ret:
                    api_url = "http://localhost:3000/save"
                    payload = {
                        "license_plate": cleaned_text,
-                       "score": round(score, 4)
+                       "score": round(text_score, 4)
                       }
                    try:
                        response = requests.post(api_url, json=payload, timeout=2)
                        if response.status_code != 200:
                            print(f"API Error: {response.json().get('message', 'Unknown error')}")
+                       print(f"License plate succefully sent")
                    except Exception as e:
                       print(f"API Connection Failed: {str(e)}")
-              
-
-              """ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-              rawfilename = f"reader_v1_imgs2/plate_{timestamp}-raw.png"
-              cv2.imwrite(rawfilename, text_region_thresh1) """
-"""               filename1 = f"reader_v1_imgs2/plate_{timestamp}-1.png"
-              cv2.imwrite(filename1, text_region_gray)
-              filename2 = f"reader_v1_imgs2/plate_{timestamp}-2.png"
-              cv2.imwrite(filename2, text_region_gray1)
-              filename3 = f"reader_v1_imgs2/plate_{timestamp}-3.png"
-              cv2.imwrite(filename3, text_region_gray2)
-              filename4 = f"reader_v1_imgs2/plate_{timestamp}-4.png"
-              cv2.imwrite(filename4, text_region_thresh)
-              filename5 = f"reader_v1_imgs2/plate_{timestamp}-5.png"
-              cv2.imwrite(filename5, text_region_thresh1)
- """

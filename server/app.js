@@ -7,7 +7,7 @@ const app = express();
 app.use(bodyParser.json());
 
 const csvWriter = csv({
-  path: 'api_data3.csv',
+  path: 'api_data4.csv',
   header: [
     { id: 'timestamp', title: 'TIMESTAMP' },
     { id: 'filename', title: 'FILENAME' },
@@ -18,7 +18,7 @@ const csvWriter = csv({
 });
 
 // Initialize CSV if needed
-if (!fs.existsSync('api_data3.csv')) {
+if (!fs.existsSync('api_data4.csv')) {
   csvWriter.writeRecords([]);
 }
 
