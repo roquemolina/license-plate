@@ -185,3 +185,8 @@ sort
 
 #csvs
 *.csv
+
+#pictures
+thresholded_plates
+
+thresholded_plates2

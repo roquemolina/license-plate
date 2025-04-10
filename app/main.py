@@ -5,6 +5,13 @@ import util
 from sort.sort import *
 from util import get_car, read_license_plate, write_csv
 
+import os
+from datetime import datetime
+
+# Crear directorio para guardar las placas si no existe
+os.makedirs('thresholded_plates2', exist_ok=True)
+
+
 
 results = {}
 
@@ -55,10 +62,32 @@ while ret:
 
                 # process license plate
                 license_plate_crop_gray = cv2.cvtColor(license_plate_crop, cv2.COLOR_BGR2GRAY)
-                _, license_plate_crop_thresh = cv2.threshold(license_plate_crop_gray, 64, 255, cv2.THRESH_BINARY_INV)
+                license_plate_crop_gray1 = cv2.resize(license_plate_crop_gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+                # Denoising
+                license_plate_crop_gray2 = cv2.GaussianBlur(license_plate_crop_gray1, (3, 3), 0)
 
+                license_plate_crop_thresh = cv2.adaptiveThreshold(license_plate_crop_gray2, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
+                
+                kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+                license_plate_crop_thresh1 = cv2.morphologyEx(license_plate_crop_thresh, cv2.MORPH_CLOSE, kernel)
+
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+                rawfilename = f"thresholded_plates2/plate_{timestamp}-raw.png"
+                cv2.imwrite(rawfilename, license_plate_crop)
+                filename1 = f"thresholded_plates2/plate_{timestamp}-1.png"
+                cv2.imwrite(filename1, license_plate_crop_gray)
+                filename2 = f"thresholded_plates2/plate_{timestamp}-2.png"
+                cv2.imwrite(filename2, license_plate_crop_gray1)
+                filename3 = f"thresholded_plates2/plate_{timestamp}-3.png"
+                cv2.imwrite(filename3, license_plate_crop_gray2)
+                filename4 = f"thresholded_plates2/plate_{timestamp}-4.png"
+                cv2.imwrite(filename4, license_plate_crop_thresh)
+                filename5 = f"thresholded_plates2/plate_{timestamp}-5.png"
+                cv2.imwrite(filename5, license_plate_crop_thresh1)
+                
                 # read license plate number
                 license_plate_text, license_plate_text_score = read_license_plate(license_plate_crop_thresh)
+
 
                 if license_plate_text is not None:
                     results[frame_nmr][car_id] = {'car': {'bbox': [xcar1, ycar1, xcar2, ycar2]},
@@ -68,4 +97,4 @@ while ret:
                                                                     'text_score': license_plate_text_score}}
 
 # write results
-write_csv(results, './los-angeles1.csv')
+#write_csv(results, './los-angeles1-OCR.csv')
