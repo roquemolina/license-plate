@@ -41,12 +41,12 @@ import re
 reader = easyocr.Reader(['en'], gpu=True)
 
 # Get list of PNG files
-image_files = glob.glob(os.path.join('thresholded_plates2', '*.png'))
+image_files = glob.glob(os.path.join('reader_v1_imgs2', '*.png'))
 
 # Define allowed characters (uppercase letters and numbers)
 ALLOWED_CHARS = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
 
-with open('plate_results-allowed-chars1.csv', 'w', newline='') as csvfile:
+with open('plate_results-reader_v1_imgs2.csv', 'w', newline='') as csvfile:
     csv_writer = csv.writer(csvfile)
     csv_writer.writerow(['Filename', 'Text', 'Confidence'])
     
@@ -68,4 +68,4 @@ with open('plate_results-allowed-chars1.csv', 'w', newline='') as csvfile:
             if cleaned_text:  # Only write if we have text left after cleaning
                 csv_writer.writerow([filename, cleaned_text, round(score, 4)])
 
-print("Processing complete. Results saved to plate_results.csv")
+print("Processing complete. Results saved in csv")

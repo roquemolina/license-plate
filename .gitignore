@@ -188,5 +188,10 @@ sort
 
 #pictures
 thresholded_plates
-
 thresholded_plates2
+
+reader_v1_imgs
+reader_v1_imgs2
+
+# node
+node_modules
