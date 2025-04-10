@@ -1,3 +1,17 @@
+"""
+--------------------------------------------------------------------------------------
+This file contains the first pre-idea it:
+    - Read cars
+    - Track cars in an object
+    - Search any license plate IN THE ENTIRE FRAME,
+        crop and process the image and link it
+        with the car that has been added to the before.
+    - Write filename, license plate and score in a csv.
+    - Write in a csv to then aply the add_missing_data
+      and visualize
+--------------------------------------------------------------------------------------
+"""
+
 from ultralytics import YOLO
 import cv2
 
