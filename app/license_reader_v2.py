@@ -14,11 +14,7 @@ This file contains the first v1 it:
 
 from ultralytics import YOLO
 import cv2
-import util
-from sort.sort import *
-from util import get_car, read_license_plate, write_csv
 import re
-import os
 from datetime import datetime
 import easyocr
 import signal
