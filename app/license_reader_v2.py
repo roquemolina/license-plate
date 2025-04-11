@@ -150,7 +150,7 @@ while not exit_flag:
             cleaned_text = re.sub(f'[^{"".join(ALLOWED_CHARS)}]', '', cleaned_text)
             # Only send if we have text left after cleaning and 5-9 char length
             if cleaned_text and 5 <= len(cleaned_text) <= 9:
-                api_url = "http://localhost:3000/save"
+                api_url = "http://192.168.1.57:3000/save"
                 payload = {
                     "license_plate": cleaned_text,
                     "score": round(text_score, 4)
