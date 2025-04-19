@@ -7,7 +7,7 @@ const app = express();
 app.use(bodyParser.json());
 
 const csvWriter = csv({
-  path: 'api_data4.csv',
+  path: 'api_data_street.csv',
   header: [
     { id: 'timestamp', title: 'TIMESTAMP' },
     { id: 'filename', title: 'FILENAME' },
@@ -18,7 +18,7 @@ const csvWriter = csv({
 });
 
 // Initialize CSV if needed
-if (!fs.existsSync('api_data4.csv')) {
+if (!fs.existsSync('api_data_street.csv')) {
   csvWriter.writeRecords([]);
 }
 
@@ -32,6 +32,7 @@ app.post('/save', async (req, res) => {
     };
 
     await csvWriter.writeRecords([record]);
+    console.log('Data saved successfully')
     res.status(200).json({ 
       success: true,
       message: 'Data saved successfully'
