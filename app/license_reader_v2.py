@@ -113,10 +113,10 @@ while not exit_flag:
           plate_width = x2 - x1
           
           # Remove 30% from top, 5% from left/right, 10% from bottom
-          y_start = int(y1 + 0.20 * plate_height)
-          y_end = int(y2 - 0.10 * plate_height)
-          x_start = int(x1 + 0.04 * plate_width)
-          x_end = int(x2 - 0.04 * plate_width)
+          y_start = int(y1 + 0.01 * plate_height)
+          y_end = int(y2 - 0.01 * plate_height)
+          x_start = int(x1 + 0.01 * plate_width)
+          x_end = int(x2 - 0.01 * plate_width)
           
           # Apply adjusted crop (with boundary checks)
           text_region = plate_crop[
@@ -150,7 +150,7 @@ while not exit_flag:
             cleaned_text = re.sub(f'[^{"".join(ALLOWED_CHARS)}]', '', cleaned_text)
             # Only send if we have text left after cleaning and 5-9 char length
             if cleaned_text and 5 <= len(cleaned_text) <= 9:
-                api_url = "http://192.168.1.57:3000/save"
+                api_url = "http://localhost:3000/save"
                 payload = {
                     "license_plate": cleaned_text,
                     "score": round(text_score, 4)
