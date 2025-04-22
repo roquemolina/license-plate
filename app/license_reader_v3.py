@@ -9,8 +9,6 @@ This file contains the first v2 it:
     - Read license plate text and
       detection confidence is > 60%
     - Send to API license plate
-    - For this v2, it reads potted_plant (class_id 58) to test
-    if it works with a item that is easy to move and show to
     the camera
 --------------------------------------------------------------------------------------
 """
@@ -21,9 +19,15 @@ import re
 from datetime import datetime
 import easyocr
 import signal
+import os
+
+import requests
+from datetime import datetime
 
 # Graceful exit setup
 exit_flag = False
+
+inputSource = './chacabuco-4k.MP4'
 
 def signal_handler(sig, frame):
     global exit_flag
@@ -32,11 +36,10 @@ def signal_handler(sig, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 
-# Crear directorio para guardar las placas si no existe
-#os.makedirs('reader_v1_imgs2', exist_ok=True)
+#Imgs folder
+output_dir = datetime.now().strftime("./detections_4k")
+os.makedirs(output_dir, exist_ok=True)
 
-import requests
-from datetime import datetime
 
 # load models
 coco_model = YOLO('./../yolo/models/yolo11s.pt')
@@ -49,7 +52,12 @@ reader = easyocr.Reader(['en'], gpu=True)
 ALLOWED_CHARS = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
 
 # load video / 0 => camera
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(inputSource)
+
+if not cap.isOpened():
+    exit_type = "camera" if isinstance(inputSource, int) else "video file"
+    print(f"Error: Could not open {exit_type}")
+    exit()
 
 vehicles = [2, 3, 5, 7]
 
@@ -59,7 +67,11 @@ while not exit_flag:
 
     ret, frame = cap.read()
     if not ret:
-        print("Error reading frame - check camera connection")
+        # Different messages based on input type
+        if isinstance(inputSource, int):
+            print("Error: Camera feed interrupted - check connection")
+        else:
+            print("Status: Video processing completed successfully")
         break
 
     # Process every nth frame
@@ -77,20 +89,6 @@ while not exit_flag:
         # Filter by confidence score (60% threshold) and vehicle
         if int(class_id) in vehicles and detection_score > 0.6:
           detections_.append([x1, y1, x2, y2, detection_score])
-        if int(class_id) == 58:
-          api_url = "http://localhost:3000/save"
-          payload = {
-            "license_plate": "Potted!",
-            "score": "0.2"
-            }
-          try:
-            response = requests.post(api_url, json=payload, timeout=2)
-            if response.status_code != 200:
-                print(f"API Error: {response.json().get('message', 'Unknown error')}")
-            print(f"License plate succefully sent")
-          except Exception as e:
-            print(f"API Connection Failed: {str(e)}")
-
     for vehicle in detections_:
         xcar1, ycar1, xcar2, ycar2, car_score = vehicle
 
@@ -152,7 +150,30 @@ while not exit_flag:
               # Remove any remaining non-alphanumeric characters using regex
             cleaned_text = re.sub(f'[^{"".join(ALLOWED_CHARS)}]', '', cleaned_text)
             # Only send if we have text left after cleaning and 5-9 char length
-            if cleaned_text and 5 <= len(cleaned_text) <= 9:
+            if cleaned_text and 4 <= len(cleaned_text) <= 9:
+                # Generate unique timestamp for filenames
+                detection_time = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+
+                # Save images
+                try:
+                    # Save full processed frame
+                    cv2.imwrite(
+                        os.path.join(output_dir, f"frame_{cleaned_text}.jpg"), 
+                        frame
+                    )
+                    # Save car crop
+                    cv2.imwrite(
+                        os.path.join(output_dir, f"car_{cleaned_text}.jpg"),
+                        car_crop
+                    )
+                    # Save license plate crop (use plate_crop instead of text_region if you want the full plate)
+                    cv2.imwrite(
+                        os.path.join(output_dir, f"plate_{cleaned_text}.jpg"),
+                        plate_crop  # or text_region if you prefer the processed text area
+                    )
+                except Exception as e:
+                    print(f"Error saving images: {str(e)}")
+
                 api_url = "http://localhost:3000/save"
                 payload = {
                     "license_plate": cleaned_text,

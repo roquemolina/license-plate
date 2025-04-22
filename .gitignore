@@ -195,3 +195,8 @@ reader_v1_imgs2
 
 # node
 node_modules
+
+detections_*
+
+system_usage.csv
+temperature.csv

@@ -1,0 +1,12 @@
+See raspberry temp
+
+cat /sys/class/thermal/thermal_zone0/temp
+
+See raspberry temp 2 seconds loop
+
+watch -n 2 cat /sys/class/thermal/thermal_zone0/temp
+
+See raspberry public ip
+
+curl ifconfig.me
+
