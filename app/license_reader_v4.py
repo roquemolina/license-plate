@@ -145,7 +145,6 @@ while not exit_flag:
           
 
           #plate_texts = reader.readtext(text_region_thresh1, allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', paragraph=False)
-          plate_texts = paddle_ocr.ocr(text_region_thresh1, cls=True)
 
         plate_texts = paddle_ocr.ocr(text_region_thresh1, cls=True)
 
