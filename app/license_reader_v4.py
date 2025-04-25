@@ -11,7 +11,7 @@ This file contains the first v2 it:
     - Send to API license plate
     the camera
     - Save frame, car and license plate cropped image
-    - It switched to PaddleOCR
+    - It switched to PP-OCR
 --------------------------------------------------------------------------------------
 """
 
@@ -33,7 +33,7 @@ from paddleocr import PaddleOCR
 # Graceful exit setup
 exit_flag = False
 
-inputSource = './chacabuco-phone.mp4'
+inputSource = './los-angeles-3hs.webm'
 
 def signal_handler(sig, frame):
     global exit_flag
@@ -43,17 +43,17 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 #Imgs folder
-output_dir = datetime.now().strftime("./detections_phone_new_OCR")
+output_dir = datetime.now().strftime("./los-angeles_new_OCR")
 os.makedirs(output_dir, exist_ok=True)
 
 
 # load models
-coco_model = YOLO('./../yolo/models/yolo11s.pt')
-license_plate_detector = YOLO('./../yolo/models/license_plate_small_v1.pt')
+coco_model = YOLO('./../yolo/models/yolo11s.pt').to('cuda')
+license_plate_detector = YOLO('./../yolo/models/license_plate_small_v1.pt').to('cuda')
 
 # Initialize the OCR reader
 #reader = easyocr.Reader(['en'], gpu=True)
-paddle_ocr = PaddleOCR(use_angle_cls=True, lang='en', use_gpu=True)
+paddle_ocr = PaddleOCR(use_angle_cls=True, lang='en', use_gpu=True, device='gpu:1')
 
 # Define allowed characters (uppercase letters and numbers)
 ALLOWED_CHARS = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
@@ -121,10 +121,10 @@ while not exit_flag:
           plate_width = x2 - x1
           
           # Remove 30% from top, 5% from left/right, 10% from bottom
-          y_start = int(y1 + 0.01 * plate_height)
-          y_end = int(y2 - 0.01 * plate_height)
-          x_start = int(x1 + 0.01 * plate_width)
-          x_end = int(x2 - 0.01 * plate_width)
+          y_start = int(y1 + 0.20 * plate_height)
+          y_end = int(y2 - 0.10 * plate_height)
+          x_start = int(x1 + 0.04 * plate_width)
+          x_end = int(x2 - 0.04 * plate_width)
           
           # Apply adjusted crop (with boundary checks)
           text_region = plate_crop[
@@ -143,61 +143,60 @@ while not exit_flag:
           kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
           text_region_thresh1 = cv2.morphologyEx(text_region_thresh, cv2.MORPH_CLOSE, kernel)
           
-
+          plate_texts = paddle_ocr.ocr(text_region_thresh1, cls=True)
           #plate_texts = reader.readtext(text_region_thresh1, allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', paragraph=False)
 
-        plate_texts = paddle_ocr.ocr(text_region_thresh1, cls=True)
-
-        if plate_texts:
-              print(plate_texts)
-              # Flatten nested OCR results
-              for plate_group in plate_texts:
-                  if not plate_group:
-                      continue
-                  for plate_entry in plate_group:
-                      if not plate_entry or len(plate_entry) < 2:
-                          continue
-                      
-                      # Extract text and confidence from nested structure
-                      text_info = plate_entry[1]
-                      
-                      # Handle cases where text_info might be nested
-                      if isinstance(text_info, (list, tuple)) and len(text_info) >= 2:
-                          text = str(text_info[0])
-                          text_score = float(text_info[1])  # Explicit conversion to float
-                      else:
-                          continue
-
-                      # Now safely compare numbers
-                      if text_score < 0.6:
-                          continue
-
-                      # Rest of your processing logic...
-                      cleaned_text = text.upper().replace(' ', '')
-                      cleaned_text = re.sub(f'[^{"".join(ALLOWED_CHARS)}]', '', cleaned_text)
-                      if text_score < 0.6:
-                          continue
-
-                      cleaned_text = text.upper().replace(' ', '')
-                      cleaned_text = re.sub(f'[^{"".join(ALLOWED_CHARS)}]', '', cleaned_text)
-
-                      if 4 <= len(cleaned_text) <= 9:
-                          # ... rest of your code ...            
-                        detection_time = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+          if plate_texts:
+                print(plate_texts)
+                # Flatten nested OCR results
+                for plate_group in plate_texts:
+                    if not plate_group:
+                        continue
+                    for plate_entry in plate_group:
+                        if not plate_entry or len(plate_entry) < 2:
+                            continue
                         
-                        try:
-                            cv2.imwrite(os.path.join(output_dir, f"frame_{cleaned_text}.jpg"), frame)
-                            cv2.imwrite(os.path.join(output_dir, f"car_{cleaned_text}.jpg"), car_crop)
-                            cv2.imwrite(os.path.join(output_dir, f"plate_{cleaned_text}.jpg"), plate_crop)
-                        except Exception as e:
-                            print(f"Error saving images: {str(e)}")
+                        # Extract text and confidence from nested structure
+                        text_info = plate_entry[1]
+                        
+                        # Handle cases where text_info might be nested
+                        if isinstance(text_info, (list, tuple)) and len(text_info) >= 2:
+                            text = str(text_info[0])
+                            text_score = float(text_info[1])  # Explicit conversion to float
+                        else:
+                            continue
 
-                        payload = {"license_plate": cleaned_text, "score": round(text_score, 4)}
-                        try:
-                            response = requests.post("http://localhost:3000/save", json=payload, timeout=2)
-                            print("License plate successfully sent" if response.status_code == 200 else f"API Error: {response.text}")
-                        except Exception as e:
-                            print(f"API Connection Failed: {str(e)}")
+                        # Now safely compare numbers
+                        if text_score < 0.6:
+                            continue
+
+                        # Rest of your processing logic...
+                        cleaned_text = text.upper().replace(' ', '')
+                        cleaned_text = re.sub(f'[^{"".join(ALLOWED_CHARS)}]', '', cleaned_text)
+                        if text_score < 0.6:
+                            continue
+
+                        cleaned_text = text.upper().replace(' ', '')
+                        cleaned_text = re.sub(f'[^{"".join(ALLOWED_CHARS)}]', '', cleaned_text)
+
+                        if 4 <= len(cleaned_text) <= 9:
+                            # ... rest of your code ...            
+                            detection_time = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+                            
+                            """ try:
+                                cv2.imwrite(os.path.join(output_dir, f"frame_{cleaned_text}.jpg"), frame)
+                                cv2.imwrite(os.path.join(output_dir, f"car_{cleaned_text}.jpg"), car_crop)
+                                cv2.imwrite(os.path.join(output_dir, f"plate_{cleaned_text}.jpg"), plate_crop)
+                            except Exception as e:
+                                print(f"Error saving images: {str(e)}") """
+                            print(cleaned_text)
+
+                            payload = {"license_plate": cleaned_text, "score": round(text_score, 4)}
+                            try:
+                                response = requests.post("http://localhost:3000/save", json=payload, timeout=2)
+                                print("License plate successfully sent" if response.status_code == 200 else f"API Error: {response.text}")
+                            except Exception as e:
+                                print(f"API Connection Failed: {str(e)}")
 # Cleanup
 cap.release()
 try:
