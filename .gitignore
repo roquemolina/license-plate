@@ -135,6 +135,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+pp-venv
+yolo-venv
 
 # Spyder project settings
 .spyderproject

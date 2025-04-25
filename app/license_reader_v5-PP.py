@@ -11,31 +11,68 @@ This file contains the first v2 it:
     - Send to API license plate
     the camera
     - Save frame, car and license plate cropped image
-    - It switched to PP-OCR
+    - It FULL switched to PP-OCR
+    - Optimized for RTX 3050 Laptop GPU
 --------------------------------------------------------------------------------------
 """
 
-from ultralytics import YOLO
+from ppdet import core
+from ppdet.engine import Trainer
+from ppdet.modeling import architectures
 import cv2
 import re
-from datetime import datetime
-#import easyocr
-import signal
 import os
-
 import requests
 from datetime import datetime
+import signal
 
 from paddleocr import PaddleOCR
+import numpy as np
 
-import os
+# --- GPU Configuration ---
+
+
+core.set_device('gpu')  # Use PaddlePaddle's device management
+os.environ['CUDA_HOME'] = 'C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8'
+os.environ['OMP_NUM_THREADS'] = '1'
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'  # Fix OMP conflicts
-os.environ['CUDA_HOME'] = 'C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8'  # Verify your CUDA path
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'  # Better error reporting
+
+# --- Model Paths ---
+VEHICLE_MODEL = './models/ppyoloe_plus_x_80e_coco'
+PLATE_MODEL = './models/yolov7_tiny_plate'
+OCR_CONFIG = {
+    'use_angle_cls': True,
+    'lang': 'en',
+    'use_gpu': True,
+    'use_tensorrt': True,
+    'precision': 'fp16',
+    'device_id': 0
+}
+
+# --- Initialize Models ---
+def init_detector(model_path, trt=True):
+    return Trainer(
+        cfg=architectures.load_config(f'{model_path}.yml'),
+        mode='test',
+        weights=f'{model_path}.pdparams',
+        use_trt=trt,
+        trt_precision='fp16'
+    )
+
+vehicle_detector = init_detector(VEHICLE_MODEL)
+plate_detector = init_detector(PLATE_MODEL)
+paddle_ocr = PaddleOCR(**OCR_CONFIG)
+
+# --- Video Processing Parameters ---
+INPUT_SOURCE = './los-angeles-3hs.webm'
+FRAME_SKIP = 3  # Process every frame (was 3)
+CONFIDENCE_THRESH = 0.6
+ALLOWED_CHARS = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
 
 # Graceful exit setup
 exit_flag = False
 
-inputSource = './los-angeles-3hs.webm'
 
 def signal_handler(sig, frame):
     global exit_flag
@@ -49,27 +86,15 @@ output_dir = datetime.now().strftime("./los-angeles_new_OCR")
 os.makedirs(output_dir, exist_ok=True)
 
 
-# load models
-coco_model = YOLO('./../yolo/models/yolo11s.pt').to('cuda')
-license_plate_detector = YOLO('./../yolo/models/license_plate_small_v1.pt').to('cuda')
-
-# Initialize the OCR reader
-#reader = easyocr.Reader(['en'], gpu=True)
-paddle_ocr = PaddleOCR(use_angle_cls=True, lang='en', use_gpu=True, device='gpu:1')
-
-# Define allowed characters (uppercase letters and numbers)
-ALLOWED_CHARS = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
-
 # load video / 0 => camera
-cap = cv2.VideoCapture(inputSource)
+cap = cv2.VideoCapture(INPUT_SOURCE)
 
 if not cap.isOpened():
-    exit_type = "camera" if isinstance(inputSource, int) else "video file"
+    exit_type = "camera" if isinstance(INPUT_SOURCE, int) else "video file"
     print(f"Error: Could not open {exit_type}")
     exit()
 
 vehicles = [2, 3, 5, 7]
-
 
 
 while not exit_flag:
@@ -77,7 +102,7 @@ while not exit_flag:
     ret, frame = cap.read()
     if not ret:
         # Different messages based on input type
-        if isinstance(inputSource, int):
+        if isinstance(INPUT_SOURCE, int):
             print("Error: Camera feed interrupted - check connection")
         else:
             print("Status: Video processing completed successfully")
@@ -86,11 +111,16 @@ while not exit_flag:
     # Process every nth frame
     frame_nmr = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
     frame_nmr += 1
-    if frame_nmr % 3 != 0:  # Process 1/3 of frames to reduce load
+    if frame_nmr % FRAME_SKIP != 0:  # Process 1/3 of frames to reduce load
         continue
 
     # detect vehicles
-    vehicle_detections = coco_model(frame)[0]
+    vehicle_detections = vehicle_detector.predict(
+    frame, 
+    conf_threshold=CONFIDENCE_THRESH,
+    nms_threshold=0.4,
+    trt_calib_mode=False
+)
     detections_ = []
 
     for detection in vehicle_detections.boxes.data.tolist():
@@ -105,7 +135,12 @@ while not exit_flag:
         car_crop = frame[int(ycar1):int(ycar2), int(xcar1):int(xcar2)]
 
         # Detect license plates WITHIN THE CROPPED CAR REGION
-        license_plates = license_plate_detector(car_crop)[0]
+        license_plates = plate_detector.predict(
+            car_crop,
+            conf_threshold=CONFIDENCE_THRESH,
+            nms_threshold=0.3,
+            trt_calib_mode=False
+        )
 
         for plate in license_plates.boxes.data.tolist():
           x1, y1, x2, y2, plate_score, _ = plate
@@ -145,8 +180,13 @@ while not exit_flag:
           kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
           text_region_thresh1 = cv2.morphologyEx(text_region_thresh, cv2.MORPH_CLOSE, kernel)
           
-          plate_texts = paddle_ocr.ocr(text_region_thresh1, cls=True)
-          #plate_texts = reader.readtext(text_region_thresh1, allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', paragraph=False)
+          plate_texts = paddle_ocr.ocr(
+              text_region_thresh1,
+              cls=True,
+              rec_algorithm='SVTR_LCNet',  # Better for license plates
+              det_db_thresh=0.3,
+              det_db_box_thresh=0.5
+            )
 
           if plate_texts:
                 print(plate_texts)
