@@ -112,7 +112,7 @@ Al activar un entorno virtual de Python (creado con **`venv`** o **`conda`**), l
 
 ### Instalar dependencias
 
-**opencv <https://pypi.org/project/opencv-python/#frequently-asked-questions**> En Python, `import cv2` es el comando que se utiliza para importar la biblioteca OpenCV. Una vez instalado, `cv2` da acceso a todas las funciones y clases que OpenCV ofrece para el procesamiento de imágenes, la visión artificial y el aprendizaje automático. En nuestro caso, lo usamos para capturar cada fotograma.
+**opencv** <https://pypi.org/project/opencv-python/#frequently-asked-questions> En Python, `import cv2` es el comando que se utiliza para importar la biblioteca OpenCV. Una vez instalado, `cv2` da acceso a todas las funciones y clases que OpenCV ofrece para el procesamiento de imágenes, la visión artificial y el aprendizaje automático. En nuestro caso, lo usamos para capturar cada fotograma.
 
 ```
 
@@ -120,7 +120,7 @@ pip install opencv-python-headless
 
 ```
 
-**request (**biblioteca HTTP sencilla pero elegante) <https://pypi.org/project/requests/>
+**request** (biblioteca HTTP sencilla pero elegante) <https://pypi.org/project/requests/>
 
 ```
 

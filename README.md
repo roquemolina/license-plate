@@ -94,14 +94,14 @@ When you activate a Python virtual environment (created with **`venv`** or **
 
 ### Install depedencies
 
-**opencv <https://pypi.org/project/opencv-python/#frequently-asked-questions**> In Python, `import cv2` is the command used to import the OpenCV library. Once installed, `cv2` gives you access to all the functions and classes that OpenCV offers for image processing, computer vision, and machine learning tasks. In our case, we use it to take a picture of every frame.
+**opencv** <https://pypi.org/project/opencv-python/#frequently-asked-questions> In Python, `import cv2` is the command used to import the OpenCV library. Once installed, `cv2` gives you access to all the functions and classes that OpenCV offers for image processing, computer vision, and machine learning tasks. In our case, we use it to take a picture of every frame.
 
 ```
  pip install opencv-python-headless
 
 ```
 
-**request (**simple, yet elegant, HTTP library) <https://pypi.org/project/requests/>
+**request** (simple, yet elegant, HTTP library) <https://pypi.org/project/requests/>
 
 ```
 pip install requests
