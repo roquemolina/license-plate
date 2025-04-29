@@ -94,6 +94,25 @@ When you activate a Python virtual environment (created with **`venv`** or **
 
 ### Install depedencies
 
+To install dependencies:
+
+Run the command based on your device:
+
+#### For CPUs (MacOS/Linux/Windows without NVIDIA GPUs):
+
+```
+pip install -r requirements_cpu.txt
+```
+
+#### For NVIDIA GPUs (Linux/Windows with CUDA support):
+```
+pip install -r requirements_gpu.txt
+```
+
+This will automatically install common packages (requirements.txt) and device-specific dependencies (CPU or GPU).
+
+If the automatic installation fails, see the details below.
+
 **opencv** <https://pypi.org/project/opencv-python/#frequently-asked-questions> In Python, `import cv2` is the command used to import the OpenCV library. Once installed, `cv2` gives you access to all the functions and classes that OpenCV offers for image processing, computer vision, and machine learning tasks. In our case, we use it to take a picture of every frame.
 
 ```

@@ -112,6 +112,25 @@ Al activar un entorno virtual de Python (creado con **`venv`** o **`conda`**), l
 
 ### Instalar dependencias
 
+Para instalar dependencias:
+
+Ejecute el comando según su dispositivo:
+
+#### Para CPU (MacOS/Linux/Windows sin GPU NVIDIA):
+
+```
+pip install -r requirements_cpu.txt
+```
+
+#### Para GPU NVIDIA (Linux/Windows con compatibilidad con CUDA):
+```
+pip install -r requirements_gpu.txt
+```
+
+Esto instalará automáticamente los paquetes comunes (requirements.txt) y las dependencias específicas del dispositivo (CPU o GPU).
+
+Si la instalación automática falla, consulte los detalles a continuacion.
+
 **opencv** <https://pypi.org/project/opencv-python/#frequently-asked-questions> En Python, `import cv2` es el comando que se utiliza para importar la biblioteca OpenCV. Una vez instalado, `cv2` da acceso a todas las funciones y clases que OpenCV ofrece para el procesamiento de imágenes, la visión artificial y el aprendizaje automático. En nuestro caso, lo usamos para capturar cada fotograma.
 
 ```

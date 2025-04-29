@@ -1,0 +1,6 @@
+-r requirements.txt
+torch
+torchvision
+torchaudio --index-url https://download.pytorch.org/whl/cu118
+paddlepaddle-gpu
+paddleocr>=2.0.1
