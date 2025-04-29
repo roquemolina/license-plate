@@ -19,23 +19,17 @@ from ultralytics import YOLO
 import cv2
 import re
 from datetime import datetime
-#import easyocr
 import signal
 import os
-
 import requests
 from datetime import datetime
-
 from paddleocr import PaddleOCR
-
 import os
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'  # Fix OMP conflicts
-os.environ['CUDA_HOME'] = 'C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8'  # Verify your CUDA path
 
 # Graceful exit setup
 exit_flag = False
 
-inputSource = './los-angeles-3hs.webm'
+inputSource = './input.mp4'
 
 def signal_handler(sig, frame):
     global exit_flag
@@ -45,7 +39,7 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 #Imgs folder
-output_dir = datetime.now().strftime("./los-angeles_new_OCR")
+output_dir = datetime.now().strftime("./directory")
 os.makedirs(output_dir, exist_ok=True)
 
 
@@ -54,7 +48,6 @@ coco_model = YOLO('./../yolo/models/yolo11s.pt').to('cuda')
 license_plate_detector = YOLO('./../yolo/models/license_plate_small_v1.pt').to('cuda')
 
 # Initialize the OCR reader
-#reader = easyocr.Reader(['en'], gpu=True)
 paddle_ocr = PaddleOCR(use_angle_cls=True, lang='en', use_gpu=True, device='gpu:1')
 
 # Define allowed characters (uppercase letters and numbers)
@@ -70,8 +63,6 @@ if not cap.isOpened():
 
 vehicles = [2, 3, 5, 7]
 
-
-
 while not exit_flag:
 
     ret, frame = cap.read()
@@ -86,7 +77,7 @@ while not exit_flag:
     # Process every nth frame
     frame_nmr = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
     frame_nmr += 1
-    if frame_nmr % 3 != 0:  # Process 1/3 of frames to reduce load
+    if frame_nmr % 3 != 0:
         continue
 
     # detect vehicles
@@ -146,11 +137,8 @@ while not exit_flag:
           text_region_thresh1 = cv2.morphologyEx(text_region_thresh, cv2.MORPH_CLOSE, kernel)
           
           plate_texts = paddle_ocr.ocr(text_region_thresh1, cls=True)
-          #plate_texts = reader.readtext(text_region_thresh1, allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', paragraph=False)
 
           if plate_texts:
-                print(plate_texts)
-                # Flatten nested OCR results
                 for plate_group in plate_texts:
                     if not plate_group:
                         continue
@@ -167,12 +155,10 @@ while not exit_flag:
                             text_score = float(text_info[1])  # Explicit conversion to float
                         else:
                             continue
-
-                        # Now safely compare numbers
+                        # Safely compare numbers
                         if text_score < 0.6:
                             continue
 
-                        # Rest of your processing logic...
                         cleaned_text = text.upper().replace(' ', '')
                         cleaned_text = re.sub(f'[^{"".join(ALLOWED_CHARS)}]', '', cleaned_text)
                         if text_score < 0.6:
@@ -182,16 +168,14 @@ while not exit_flag:
                         cleaned_text = re.sub(f'[^{"".join(ALLOWED_CHARS)}]', '', cleaned_text)
 
                         if 4 <= len(cleaned_text) <= 9:
-                            # ... rest of your code ...            
                             detection_time = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
                             
-                            """ try:
+                            try:
                                 cv2.imwrite(os.path.join(output_dir, f"frame_{cleaned_text}.jpg"), frame)
                                 cv2.imwrite(os.path.join(output_dir, f"car_{cleaned_text}.jpg"), car_crop)
                                 cv2.imwrite(os.path.join(output_dir, f"plate_{cleaned_text}.jpg"), plate_crop)
                             except Exception as e:
-                                print(f"Error saving images: {str(e)}") """
-                            print(cleaned_text)
+                                print(f"Error saving images: {str(e)}")
 
                             payload = {"license_plate": cleaned_text, "score": round(text_score, 4)}
                             try:
