@@ -85,7 +85,16 @@ def ocr_worker(plate_queue):
         h, w, _ = plate_crop.shape
         refined_crop = plate_crop[int(0.2*h):int(0.9*h), int(0.05*w):int(0.95*w)]
 
-        ocr_results = paddle_ocr.ocr(refined_crop, cls=True)
+        # Preprocessing for OCR (following v4)
+        gray = cv2.cvtColor(refined_crop, cv2.COLOR_BGR2GRAY)
+        resized = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_LINEAR)
+        blurred = cv2.GaussianBlur(resized, (5, 5), 0)
+        thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                        cv2.THRESH_BINARY, 11, 2)
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+
+        ocr_results = paddle_ocr.ocr(closed, cls=True)
 
         if not ocr_results:
             continue
