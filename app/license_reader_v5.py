@@ -11,6 +11,13 @@ from datetime import datetime
 from ultralytics import YOLO
 from paddleocr import PaddleOCR
 
+"""
+--------------------------------------------------------------------------------------
+This file contains the v5 it:
+    - This is an updated version but results are better with v5
+--------------------------------------------------------------------------------------
+"""
+
 # --------- Configuration ---------
 INPUT_SOURCE = './chacabuco-phone.mp4'
 FRAME_SKIP = 3  # Process every 3rd frame

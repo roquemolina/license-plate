@@ -1,6 +1,6 @@
 """
 --------------------------------------------------------------------------------------
-This file contains the first v2 it:
+This file contains the first v4 it:
     - Take a video as an input and read objects
     - Filter cars and detection confidence is > 60%
     - Search any license plate INSIDE COOPRED CAR FRAME and 

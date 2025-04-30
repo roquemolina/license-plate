@@ -1,5 +1,6 @@
 """
 --------------------------------------------------------------------------------------
+THIS IS NOT WOKING RIGHT NOW BC I CAN'T IMPLEMENT PP
 This file contains the first v2 it:
     - Take a video as an input and read objects
     - Filter cars and detection confidence is > 60%
